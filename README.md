@@ -14,13 +14,66 @@ A simple project to learn ruby and rails.
 
 This guide assumes you have a basic Rails project setup and are familiar with Ruby on Rails development practices.
 
-1. **Setting Up the Quote Model**
-First, you need a model to store quotes. This model will include fields for text, author, tags, and topic.
+1. **Setting Up the Author, Quote, and Tag Models**
+    First, generate the `Author` model with fields for the author's name and image URL. Each author can have many quotes.
 
-    ```txt
-    rails generate model Quote text:text author:string tags:string topic:string
-    rails db:migrate
-    ```
+      ```txt
+      rails generate model Author name:string image_url:string
+      rails db:migrate
+      ```
+
+    Next, create the `Quote` model to store quotes. This model will include field for text, and it will reference the `Author` model to establish a one-to-many relationship.
+
+      ```txt
+      rails generate model Quote text:text author:references
+      rails db:migrate
+      ```
+
+    Finally, generate the `Tag` model for managing tags. Since a quote can have many tags and a tag can belong to many quotes, you'll also need to create a join table to establish a many-to-many relationship between `Quote` and `Tag`.
+
+      ```txt
+      rails generate model Tag name:string
+      rails db:migrate
+      rails generate migration CreateJoinTableQuoteTag quote:references tag:references
+      rails db:migrate
+      ```
+
+    The above code raises the following error:
+
+      ```txt
+      == 20240627215053 CreateJoinTableQuoteTag: migrating ==========================
+      -- create_join_table(:quotes, :tags)
+      rails aborted!
+      StandardError: An error has occurred, this and all later migrations canceled:
+
+      you can't define an already defined column 'quote_id'.
+      /Users/hayounlee/Projects/rails-daily-quote/db/migrate/20240627215053_create_join_table_quote_tag.rb:4:in `block in change'
+      /Users/hayounlee/Projects/rails-daily-quote/db/migrate/20240627215053_create_join_table_quote_tag.rb:3:in `change'
+
+      Caused by:
+      ArgumentError: you can't define an already defined column 'quote_id'.
+      /Users/hayounlee/Projects/rails-daily-quote/db/migrate/20240627215053_create_join_table_quote_tag.rb:4:in `block in change'
+      /Users/hayounlee/Projects/rails-daily-quote/db/migrate/20240627215053_create_join_table_quote_tag.rb:3:in `change'
+      Tasks: TOP => db:migrate
+      (See full trace by running task with --trace)
+      ```
+
+    You can resolve this by removing lines that defines references explicitly from the migration file.
+
+      ```ruby
+      class CreateJoinTableQuoteTag < ActiveRecord::Migration[7.0]
+        def change
+          create_join_table :quotes, :tags do |t|
+            # This was generated but causes ArgumentError: you can't define an already defined column 'quote_id'.
+            # and you can't define an already defined column 'quote_id'.
+            # t.references :quote, null: false, foreign_key: true
+            # t.references :tag, null: false, foreign_key: true
+            t.index :quote_id
+            t.index :tag_id
+          end
+        end
+      end
+      ```
 
 2. **Setting Up Admin Interface**
 For adding, editing, and deleting quotes via an admin interface, you can use a gem like ActiveAdmin or RailsAdmin. Here's how to set up ActiveAdmin as an example:
