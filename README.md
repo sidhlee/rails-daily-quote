@@ -75,6 +75,45 @@ This guide assumes you have a basic Rails project setup and are familiar with Ru
       end
       ```
 
+    Next steps involve setting up the model associations correctly:
+
+    - In `quote.rb`:
+
+    ```ruby
+    class Quote < ApplicationRecord
+      belongs_to :author
+      has_and_belongs_to_many :tags
+    end
+    ```
+
+    - In `tag.rb`:
+
+    ```ruby
+    class Tag < ApplicationRecord
+      has_and_belongs_to_many :quotes
+    end
+    ```
+
+    This setup assumes you do not need to store additional information in the join table or work with the join table as its own entity. If later you find that you need to add more fields to the join table (e.g., timestamps, counters, or any other attributes that describe the relationship further), you would then need to migrate to a has_many :through relationship, which involves creating a model for the join table and adjusting your associations.
+
+    ```ruby
+    class Quote < ApplicationRecord
+      belongs_to :author
+      has_many :quote_tags
+      has_many :tags, through: :quote_tags
+    end
+
+    class Tag < ApplicationRecord
+      has_many :quote_tags
+      has_many :quotes, through: :quote_tags
+    end
+
+    class QuoteTag < ApplicationRecord
+      belongs_to :quote
+      belongs_to :tag
+    end
+    ```
+
 2. **Setting Up Admin Interface**
 For adding, editing, and deleting quotes via an admin interface, you can use a gem like ActiveAdmin or RailsAdmin. Here's how to set up ActiveAdmin as an example:
 
