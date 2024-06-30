@@ -120,6 +120,8 @@ For adding, editing, and deleting quotes via an admin interface, you can use a g
     ```txt
     # Add to your Gemfile
     gem 'activeadmin'
+    gem 'devise' # authentication lib
+    gem 'sassc-rails' # SASS compiler
 
     # Then run bundle install
     bundle install
@@ -127,11 +129,79 @@ For adding, editing, and deleting quotes via an admin interface, you can use a g
     # Install ActiveAdmin
     rails generate active_admin:install
     rails db:migrate
+    # Runs the code found in the db/seeds.rb to create admin user
     rails db:seed
     rails server
     ```
 
-    Navigate to /admin and log in with the default username and password to start managing quotes.</br></br>
+    To add, edit, and delete quotes on the admin page using ActiveAdmin in your Rails application, follow these steps:
+
+    1. **Register the Quote Model with ActiveAdmin** Generate an ActiveAdmin resource for the `Quote` model to manage it through the admin interface.
+
+        ```txt
+        rails generate active_admin:resource Quote
+        ```
+
+    2. **Customize the Quote Admin Resource** Edit the file app/admin/quotes.rb to customize the admin interface for Quote. Here's an example setup:
+
+        ```ruby
+        ActiveAdmin.register Quote do
+          permit_params :text, :author_id, tag_ids: []
+
+          index do
+            selectable_column
+            id_column
+            column :text
+            column :author
+            column :tags do |quote|
+              quote.tags.map(&:name).join(", ")
+            end
+            actions
+          end
+
+          filter :text
+          filter :author
+          filter :tags
+
+          form do |f|
+            f.inputs do
+              f.input :text
+              f.input :author
+              f.input :tags, as: :check_boxes
+            end
+            f.actions
+          end
+
+          show do
+            attributes_table do
+              row :text
+              row :author
+              row :tags do |quote|
+                quote.tags.map(&:name).join(", ")
+              end
+            end
+          end
+        end
+        ```
+
+       This setup allows you to:
+       - **List Quotes**: Display quotes with their ID, text, author, and tags in the index page.
+       - **Filter Quotes**: Filter quotes by text, author, or tags.
+       - **Add/Edit** Quotes: Create or edit quotes with text, select an author from a dropdown, and associate tags using checkboxes.
+       - **Delete Quotes**: Remove quotes from the database.
+
+    3. Generate ActiveAdmin resources for `Author` and `Tag` models:
+
+        ```txt
+          rails generate active_admin:resource Author
+          rails generate active_admin:resource Tag
+        ```
+
+        Running these commands will create two new files in `app/admin` directory:
+        - `app/admin/authors.rb`
+        - `app/admin/tags.rb`
+
+    4. **Start Your Rails Server** Run `rails server` and navigate to `/admin` on your browser. Log in with your admin user credentials. You should now be able to add, edit, and delete quotes through the ActiveAdmin interface. </br></br>
 
 3. **Setting Up Cron Job for Daily Emails**
 To send an email with 3 random quotes from the database every morning at 5 am EST, you can use the whenever gem to manage cron jobs and Action Mailer for sending emails.
