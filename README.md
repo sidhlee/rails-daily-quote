@@ -267,3 +267,67 @@ To send an email with 3 random quotes from the database every morning at 5 am ES
 ## Decrypting credential with master.key file
 
 In Rails 5.1 and later versions, the secrets.yml file was replaced by encrypted credentials for managing secrets. Instead of secrets.yml, you should look for `config/credentials.yml.enc` and `config/master.key`. The `credentials.yml.enc` file contains encrypted secrets that can be edited with the Rails command `rails credentials:edit`. The master.key file is used to decrypt `credentials.yml.enc` and should not be committed to your version control system (it's included in the `.gitignore` file by default).
+
+## Moving to Superbase
+
+### Step 1: Add pg Gem
+
+Ensure the pg gem is in your Gemfile since Supabase is PostgreSQL compatible.
+
+```ruby
+gem 'pg'
+```
+
+Run `bundle install` to install the gem.
+
+### Step 2: Update `database.yml`
+
+Modify your `config/database.yml` to use PostgreSQL settings that match your Supabase database credentials. You can find these credentials in your Supabase project settings under the "Database" section.
+
+```yml
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  # For Rails 6.1 and up, `prepared_statements: true` might need to be set to false
+  # prepared_statements: false
+  # <%= %> is ERB (Embedded Ruby) templates. { 5 } provides default value
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV['SUPABASE_HOST'] %>
+  user: <%= ENV['SUPABASE_USER'] %>
+  password: <%= ENV['SUPABASE_PASSWORD'] %>
+  port: <%= ENV['SUPABASE_PORT'] %>
+  database: <%= ENV['SUPABASE_DB'] %>
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default
+```
+
+### Step 3: Set Environment Variables
+
+Set the environment variables (`SUPABASE_HOST`, `SUPABASE_USER`, `SUPABASE_PASSWORD`, `SUPABASE_PORT`, `SUPABASE_DATABASE`) in your development and production environment. This can be done in a `.env` file for development (don't forget to add `.env` to your `.gitignore` file to avoid exposing your credentials).
+
+For production, set these variables in your hosting environment's configuration section.
+
+### Step 4: Migrate Database
+
+Run your migrations to set up your database schema in Supabase:
+
+```txt
+rails db:create db:migrate
+```
+
+### Step 5: Test the Connection
+
+Run your Rails server and perform some database operations to ensure everything is connected properly and working as expected.
+
+### Additional Considerations
+
+- **Security**: Ensure your Supabase database is secured and only accessible from your application's IP addresses or secure environments.
+- **Environment Variables**: Never hard-code your database credentials in your application. Always use environment variables.
+- **Supabase Features**: Supabase provides more than just a database. Explore other features like authentication, storage, and real-time subscriptions that you might want to integrate into your Rails application.
